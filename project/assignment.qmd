@@ -1,0 +1,161 @@
+---
+title: "Quarto Assignment"
+author: "Kunal Chhabria"
+format: html
+
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("maps")
+
+library(tidyverse)
+library(ggplot2)
+library(maps)
+
+country_data <- read.csv("/cloud/project/country_data.csv")
+country_metadata <- read.csv("/cloud/project/country_metadata.csv")
+
+covid_data <- full_join(country_data,country_metadata)
+
+covid_data <- mutate(covid_data, date = as.Date(date, format = "%Y-%m-%d"))
+
+options(scipen = 999)
+
+```
+
+**Introduction**
+
+This report analyzes COVID-19 data for 10 countries from 2020 to 2022.
+
+
+
+
+
+```{r}
+
+#| label: Scatter with Regression Line
+
+ireland_data <- covid_data %>% filter(location == "Ireland")
+
+ireland_data %>%
+  ggplot(aes(total_deaths, people_fully_vaccinated))+
+  geom_point(size=0.05)+
+  geom_smooth()+
+  labs(
+    title = "Ireland: Total deaths vs Full Vaccinations",
+    caption = "Source: Provided Datasets",
+    x = "People Fully Vaccinated",
+    y = "Total Deaths Recorded",
+  )+
+  theme_dark()
+
+
+```
+
+
+```{r}
+
+#| label: Bar Plot
+
+filtered_data_1 <- covid_data %>% filter(date == "2022-12-31")
+
+
+filtered_data_1 %>%
+  ggplot(aes(location,total_deaths,fill=location))+
+  theme(legend.position="none")+
+  geom_bar(stat="identity")+
+  
+
+  labs(
+    title = "Total Deaths by Coutry at the End of 2022.",
+    caption = "Source: Provided Datasets",
+    x = "Country",
+    y = "Total Deaths Recorded",
+    fill = "Countries being studied"
+  )
+  
+
+
+
+```
+
+
+
+
+
+
+
+```{r}
+
+#| label: Timeseries
+
+filtered_data_2 <- covid_data %>% group_by(location) %>% filter(total_deaths>0)
+
+filtered_data_2 %>%
+  ggplot(aes(date, total_tests_per_thousand, colour=location))+
+  geom_line()+
+  labs(
+    title = "Timeseries: New Cases per Country.",
+    subtitle = "Due to some missing values we see Hungary does not have a continuous graph.",
+    caption = "Source: Provided Datasets",
+    x = "Country",
+    y = "Total Tests Per Thousand",
+  )+
+  theme_classic()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+#| label: Worldmap
+
+
+filtered_data <- covid_data %>% filter(date == "2022-01-01")
+
+worldmap <- map_data("world")
+
+map_filtered_data <- full_join(worldmap, filtered_data, by = c("region"="location"))
+
+ggplot(data = map_filtered_data) +
+  aes(x=long, y=lat, group = group, fill= total_cases) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", na.value = "grey") +
+  theme_light()+
+  labs(
+    title = "Total cases by the end of 2021 in each of the countries.",
+    subtitle = "Countries in grey are not considered in this report.",
+    caption = "Source: Provided Dataests, R Package {maps}",
+    x = "Longitude",
+    y = "Latitude",
+    fill = "Total Cases Recorded as of 1st Jan 2022"
+  ) +
+  theme(legend.position="bottom")
+  
+
+```
+
+
+
